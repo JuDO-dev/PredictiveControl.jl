@@ -3,6 +3,21 @@ uuid = "0acd8c25-a458-40e6-9243-fd12d9fc3084"
 authors = ["Ian McInerney", "Imperial College London"]
 version = "0.1.0"
 
+[deps]
+BlockArrays = "8e7c35d0-a365-5155-bbbb-fb81a777f24e"
+COSMO = "1e616198-aa4e-51ec-90a2-23f7fbd31d8d"
+ControlSystems = "a6e380b2-a6ca-5380-bf3e-84a91bcd477e"
+FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
+JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
+MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
+MatrixEquations = "99c1a7ee-ab34-5fd5-8076-27c950a045f4"
+OSQP = "ab2f91bb-94b4-55e3-9ba0-7f65df51de79"
+Roots = "f2b01f46-fcfa-551c-844a-d8ac1e96c665"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+ToeplitzMatrices = "c751599d-da0a-543b-9d20-d0a503d91d24"
+
 [compat]
 julia = "1"
 
