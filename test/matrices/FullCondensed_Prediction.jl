@@ -43,7 +43,7 @@ mat = MPC.prediction( sys, N )
 
 # Make sure the blocks have the proper values for the system
 for i = 1:N, j = i:N
-    b = getblock( mat, j, i )
+    b = view( mat, Block( j, i ) )
 
     @test size( b ) == (nx, nu)
     @test b == A^(j-i) * B
@@ -71,7 +71,7 @@ mat = MPC.inputprediction( csys, K, N )
 
 # Make sure the blocks have the proper values for the system
 for i = 1:N, j = i:N
-    b = getblock( mat, j, i )
+    b = view( mat, Block( j, i ) )
 
     @test size( b ) == (nu, nu)
 

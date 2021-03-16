@@ -43,7 +43,7 @@ mat = MPC.initialpropagation( sys, N )
 
 # Make sure the blocks have the proper values for the system
 for i = 1:N
-    b = getblock( mat, i, 1 )
+    b = view( mat, Block( i, 1 ) )
 
     @test size( b ) == (nx, nx)
     @test b == sys.A^i
@@ -71,7 +71,7 @@ mat = MPC.inputinitialpropagation( csys, K, N )
 
 # Make sure the blocks have the proper values for the system
 for i = 1:N
-    b = getblock( mat, i, 1 )
+    b = view( mat, Block( i, 1 ) )
 
     @test size( b ) == (nu, nx)
     @test b == -K*csys.A^(i-1)
