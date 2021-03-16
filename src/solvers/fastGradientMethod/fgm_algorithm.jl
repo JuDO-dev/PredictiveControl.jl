@@ -43,7 +43,7 @@ mutable struct Conjugate{T} <: StopCondition where {T <: Number}
     n::Int        # Number of variables in the problem
     ϵₛ::T         # Scaled termination criteria
 
-    function Conjugate( ϵ::T, scaled::Bool = true ) where {T <: Number}
+    function Conjugate( ϵ::T; scaled::Bool = true ) where {T <: Number}
         return new{T}( ϵ, scaled, 1, ϵ )
     end
 end
@@ -129,7 +129,7 @@ struct Best <: StopCondition
     conj::Conjugate
 
     function Best( ϵ₁::T, ϵ₂::T = ϵ₁; scaled::Bool = true ) where {T <: Number}
-        return new( Gradient( ϵ₁, scaled ), Conjugate( ϵ₂, scaled ) )
+        return new( Gradient( ϵ₁; scaled = scaled ), Conjugate( ϵ₂; scaled = scaled ) )
     end
 end
 
