@@ -25,5 +25,7 @@ include( "testUtils.jl" )
         @safetestset "FGM upper iter bound" begin include( "solvers/fastGradientMethod/fgm_iterationbound.jl" ) end
     end
 
-    include( "analysis/conditioning.jl" )
+    @testset "Analysis" begin
+        @safetestset "Condition number bound" begin include( "analysis/conditioning_bound.jl" ) end
+    end
 end
