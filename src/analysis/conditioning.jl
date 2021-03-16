@@ -1,5 +1,5 @@
 
-function conditionBound( clqr::ConstrainedTimeInvariantLQR, samplingPoints::Integer = 100; L::Matrix = [[0]] )
+function conditionBound( clqr::ConstrainedTimeInvariantLQR, samplingPoints::Integer = 100; L::Matrix = zeros(Float64, 1, 1) )
     sys = getsystem( clqr )
     nx  = nstates( sys )
     nu  = ninputs( sys )
