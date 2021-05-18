@@ -16,30 +16,6 @@ to_matrix(T, A::Number) = fill(T(A), 1, 1)
 to_matrix(T, A::UniformScaling, s::Integer) = Matrix{T}(A*I, s, s)
 
 
-function blockkron( A::AbstractArray, B::AbstractArray )
-    K = kron( A, B )
-
-    if ndims(B) == 1
-        a, = size(B)
-        b = 1
-    else
-        (a, b) = size(B)
-    end
-
-    if ndims(A) == 1
-        n, = size(A)
-        m = 1
-    else
-        (n, m) = size(A)
-    end
-
-    if ndims(K) == 1
-        return BlockArray( K, [a for i=1:n] )
-    else
-        return BlockArray( K, [a for i=1:n], [b for i=1:m] )
-    end
-end
-
 function dftmatrix( n::Integer; unitary::Bool = false )
 
     M = fft( 1.0*I(n), 1 )

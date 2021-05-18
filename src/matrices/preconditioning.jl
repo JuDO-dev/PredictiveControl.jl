@@ -122,9 +122,8 @@ function circulantblockpreconditioner( clqr::ConstrainedTimeInvariantLQR; varian
     if variant == :Strang
         M = H
     elseif variant == :Chan
-        @show E = dftmatrix( size( H, 1 ), unitary = true )
-
-        @show D = Diagonal( E * H * E' )
+        E = dftmatrix( size( H, 1 ), unitary = true )
+        D = Diagonal( E * H * E' )
         M = real( E' * D * E )
     else
         error( "Unknown variant specified. Valid types are :Strang and :Chan" )

@@ -1,11 +1,12 @@
-import BlockArrays
-import LinearAlgebra
+using BlockArrays
+using LinearAlgebra
+using PredictiveControl
 
 # Test a matrix kron into a matrix
 A = ones( Float64, (2, 2) )
 B = rand( 2, 2 )
 
-K = PredictiveControl.blockkron( A, B )
+K = blockkron( A, B )
 
 @test blocksize( K ) == ( 2, 2 )
 @test K[Block(1, 1)] == B
@@ -18,7 +19,7 @@ K = PredictiveControl.blockkron( A, B )
 A = ones( Float64, (2) )
 B = rand( 2, 2 )
 
-K = PredictiveControl.blockkron( A, B )
+K = blockkron( A, B )
 
 @test blocksize( K ) == ( 2, 1 )
 @test K[Block(1, 1)] == B
@@ -28,7 +29,7 @@ K = PredictiveControl.blockkron( A, B )
 A = ones( Float64, (2, 2) )
 B = rand(4,1)
 
-K = PredictiveControl.blockkron( A, B )
+K = blockkron( A, B )
 
 @test blocksize( K ) == ( 2, 2 )
 @test K[Block(1, 1)] == B
@@ -41,7 +42,7 @@ K = PredictiveControl.blockkron( A, B )
 A = ones( Float64, (2) )
 B = rand(4,1)
 
-K = PredictiveControl.blockkron( A, B )
+K = blockkron( A, B )
 
 @test blocksize( K ) == ( 2, 1 )
 @test K[Block(1, 1)] == B
@@ -51,7 +52,7 @@ K = PredictiveControl.blockkron( A, B )
 A = ones( Float64, (2) )
 B = rand(4)
 
-K = PredictiveControl.blockkron( A, B )
+K = blockkron( A, B )
 
 @test blocksize( K ) == ( 2, )
 @test reshape( K[Block(1, 1)], (:) ) == B
