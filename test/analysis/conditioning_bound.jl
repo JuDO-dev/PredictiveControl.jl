@@ -10,8 +10,7 @@ clqrWithS     = createSampleLTISystem( uses = true, usek = true )
 
 # These are all conditions that are not allowed
 @test_throws DomainError conditionBound( clqrUnstable )
-@test_throws DomainError conditionBound( clqrStablized, -1 )
-@test_throws DomainError conditionBound( clqrWithS, -1 )
+@test_throws DomainError conditionBound( clqrWithS )
 
 # A test for a single-input pre-stabilized system
 @test conditionBound( clqrStablized ) ≈ 9.986301 atol=1e-4
@@ -37,4 +36,3 @@ R = [1.0 0.0
 clqrTwoInputs = ConstrainedTimeInvariantLQR( sys, 5, Q, R, :Q )
 
 @test conditionBound( clqrTwoInputs ) ≈ 12201.000000000648
-

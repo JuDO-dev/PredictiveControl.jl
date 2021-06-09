@@ -1,5 +1,8 @@
 
-function conditionBound( clqr::ConstrainedTimeInvariantLQR, samplingPoints::Integer = 100; L::Matrix = zeros(Float64, 1, 1) )
+# Import this because it is only used in conditionBound, and it has some methods that conflict with ControlSystems
+import DescriptorSystems
+
+function conditionBound( clqr::ConstrainedTimeInvariantLQR; L::Matrix = zeros(Float64, 1, 1) )
     sys = getsystem( clqr )
     nx  = nstates( sys )
     nu  = ninputs( sys )
@@ -12,34 +15,24 @@ function conditionBound( clqr::ConstrainedTimeInvariantLQR, samplingPoints::Inte
     elseif( !iszero( clqr.S ) )
         throw( DomainError( clqr.S, "Condition number bound is only available for problems with a zero S matrix." ) )
 
-    elseif( samplingPoints < 1 )
-        throw( DomainError( samplingPoints, "At least one sampling point must be used" ) )
     end
 
     if iszero( L )
         L = 1.0*I(nu)
     end
 
-    # We need the actual transfer function matrix as an evaluatable function
-    tf(z) = sys.C*inv( z*I(nx) - sys.A )*sys.B + sys.D
+    # The adjoint system is actually a descriptor system, so we need to form one for our computations
+    desc = DescriptorSystems.dss( sys.A, sys.B, sys.C, sys.D; Ts=sys.Ts )
 
     # This is the matrix symbol for the Hessian
-    f(z) = L*( tf(z)'*clqr.Qₖ*tf(z) + clqr.R )*L'
+    fullsys = L*( desc'*clqr.Qₖ*desc + clqr.R )*L'
 
-    # Generator for the points around the unit circle to sample at
-    T = ( exp( im*( -π/2 + 2*π*i/samplingPoints ) ) for i=1:samplingPoints )
+    # Actually compute the condition number by using the H\_infty norm
+    (maxeig, )    = DescriptorSystems.ghinfnorm( fullsys )
+    (mineiginv, ) = DescriptorSystems.ghinfnorm( inv( fullsys ) )
 
-    # Generator for the matrices to explore for their eigenvalues
-    tfm = ( f(z) for z in T )
-
-    # Compute the eigenvalues of the sampled transfer function matrices
-    mate = eigvals.( tfm )
-    eigs = collect( Iterators.flatten( mate ) )
-    eigs = abs.( eigs )
-
-    sort!( eigs )
-
-    return eigs[end] / eigs[1]
+    # mineiginv is computed using the inverse system, so it actually is the inverse of the minimum eigenvalue of the original system
+    return maxeig * mineiginv
 end
 
 
