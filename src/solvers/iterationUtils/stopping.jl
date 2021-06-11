@@ -17,36 +17,21 @@ struct StoppingConditionIterable{I, SC}
     condVec::Vector{SC}
 end
 
-function iterate( iter::StoppingConditionIterable )
-    next = iterate( iter.iter )
-    return dispatch( iter, next )
-end
+function iterate( iter::StoppingConditionIterable, args... )
+    next = iterate( iter.iter, args... )
 
-function iterate( iter::StoppingConditionIterable, (instruction, state) )
-    if instruction == :halt
-        return nothing
-    end
-
-    next = iterate( iter.iter, state )
-    return dispatch( iter, next )
-end
-
-function dispatch( iter::StoppingConditionIterable, next )
     if next === nothing
         return nothing
     end
 
-    stop = false
-
     for s in iter.condVec
-        stop |= s( next[1] )
-
-        stop && break
+        if s( next[2] )
+            return nothing
+        end
     end
 
-    return next[1], (stop ? :halt : :continue, next[2])
+    return next
 end
-
 
 """
     halt( iter::I, condVec::Vector{SC} ) where {I, SC}
