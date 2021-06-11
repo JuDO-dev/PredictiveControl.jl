@@ -1,5 +1,7 @@
 """
+```julia
     Conjugate( ϵ::T, scaled::Bool = true ) where {T <: Number}
+```
 
 Terminate the Fast Gradient Method when the conjugate residual value is below `ϵ`.
 The value of `ϵ` is divided by the number of variables in the problem when `scaled`
@@ -43,7 +45,9 @@ end
 
 
 """
+```julia
     Gradient( ϵ::T, scaled::Bool = true ) where {T <: Number}
+```
 
 Terminate the Fast Gradient Method when the gradient value is below `ϵ`.
 The value of `ϵ` is divided by the number of variables in the problem when `scaled`
@@ -91,10 +95,12 @@ end
 
 
 """
+```julia
     Best( ϵ₁::T, ϵ₂:T = ϵ₁; scaled::Bool = true ) where {T <: Number}
+```
 
 Terminate the Fast Gradient Method when either the gradient value is below `ϵ₁` or the
-conjugate residual value is beloe `ϵ₂`. `ϵ₁` and `ϵ₂` are divided by the number of variables
+conjugate residual value is below `ϵ₂`. `ϵ₁` and `ϵ₂` are divided by the number of variables
 in the problem to produce a scaled termination criteria when `scaled` is true.
 
 This criteria is based on the results in §6.4 of [1].

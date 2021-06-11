@@ -1,5 +1,7 @@
 """
-    function coldstartdelta( G::AbstractMatrix{Float64}, g::AbstractVector{Float64}; H::AbstractMatrix{Float64} = zeros( Float64, (1,1) ), L::Float64 = eigmax(H) )
+```julia
+    coldstartdelta( G::AbstractMatrix{Float64}, g::AbstractVector{Float64}; H::AbstractMatrix{Float64} = zeros( Float64, (1,1) ), L::Float64 = eigmax(H) )
+```
 
 Compute the Δ parameter needed when computing the upper iteration bound for a cold-started
 fast gradient method.
@@ -29,7 +31,9 @@ end
 
 
 """
-    upperiterationbound( ϵ::Float64, G::AbstractMatrix{Float64}, g::AbstractVector{Float64}; H::AbstractMatrix{Float64} = = zeros( Float64, (1,1) ), L::Float64 = eigmax(H), κ::Float64 = cond(H) )
+```julia
+    upperiterationbound( ϵ::Float64, G::AbstractMatrix{Float64}, g::AbstractVector{Float64}; H::AbstractMatrix{Float64} = zeros( Float64, (1,1) ), L::Float64 = eigmax(H), κ::Float64 = cond(H) )
+```
 
 Compute the maximum number of iterations needed for the fast gradient method to reach `ϵ` sub-optimality level when projecting
 into the constraint set ``G x ≦ g``.

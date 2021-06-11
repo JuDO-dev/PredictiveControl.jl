@@ -1,10 +1,12 @@
 """
-    StopCondition
+```julia
+    AbstractStopCondition
+```
 
 An abstract type that all stopping conditions for the iterative method
 should inherit from.
 
-Each type should define the () operator in itself, and return true from that
+Each type should define the () operator on itself, and return true from that
 method when the stopping condition is met, and false if the condition is not
 met.
 """
@@ -34,7 +36,9 @@ function iterate( iter::StoppingConditionIterable, args... )
 end
 
 """
+```julia
     halt( iter::I, condVec::Vector{SC} ) where {I, SC}
+```
 
 Construct an iterator that will check the state of `iter` against the stopping conditions
 `condVec`.
@@ -42,7 +46,9 @@ Construct an iterator that will check the state of `iter` against the stopping c
 halt( iter::I, condVec::Vector{SC} ) where {I, SC} = StoppingConditionIterable{I, eltype(condVec)}( iter, condVec )
 
 """
+```julia
     halt( iter::I, cond::SC ) where {I, SC <: AbstractStopCondition}
+```
 
 Construct an iterator that will check the state of `iter` against the stopping condition
 `condVec`.

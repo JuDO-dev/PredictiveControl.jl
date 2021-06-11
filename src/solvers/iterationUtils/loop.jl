@@ -1,5 +1,7 @@
 """
+```julia
     loop( iter )
+```
 
 Loop over `iter` until it finishes.
 """

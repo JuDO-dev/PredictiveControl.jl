@@ -1,5 +1,7 @@
 """
+```julia
     ConstantStep()
+```
 
 Use a constant step size of ``( √L̅ - √̅μ̅  ) / ( √L̅ + √̅μ̅  )``, where ``L`` is the maximum eigenvalue
 of the Hessian and ``μ`` is the minimum eigenvalue of the Hessian.
@@ -27,7 +29,9 @@ iterate( cs::ConstantStep, step::ConstantStepIterator ) = (cs.β, step)
 
 
 """
+```julia
     VariableStep()
+```
 
 Use a variable step size  computed by finding the roots of a simple polynomial.
 

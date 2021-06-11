@@ -14,4 +14,13 @@ function iterate( iter::ApplyIterable, args... )
     return next
 end
 
+"""
+```julia
+    apply( iter::I, fun::F, period=1 ) where {I, F}
+```
+
+Apply the function `fun` to the iterator `iter` at every `period` samples.
+`fun` should accept a single argument, which is the state variable for the iterator
+`iter`.
+"""
 apply( iter::I, fun::F, period=1 ) where {I, F} = ApplyIterable{I, F}( iter, fun, period )

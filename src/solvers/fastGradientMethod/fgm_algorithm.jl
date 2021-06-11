@@ -75,18 +75,20 @@ end
 
 
 """
-function fastgradientmethod( H::AbstractMatrix{T}, b::AbstractVector{T}, proj::Function; x₀::AbstractVector{T} = zeros( T, size( b ) ),
-                                                                                         L::Union{Nothing, T} = nothing,
-                                                                                         μ::Union{Nothing, T} = nothing,
-                                                                                         step::AbstractStep = ConstantStep(),
-                                                                                         stopconditions::Vector{SC} = [Best(1e-4)],
-                                                                                         maxiter::Integer = 100,
-                                                                                         dispinterval::Integer = 1
-                           ) where {T <: Number, SC <: AbstractStopCondition}
+```julia
+    fastgradientmethod( H::AbstractMatrix{T}, b::AbstractVector{T}, proj::Function; x₀::AbstractVector{T} = zeros( T, size( b ) ),
+                                                                                    L::Union{Nothing, T} = nothing,
+                                                                                    μ::Union{Nothing, T} = nothing,
+                                                                                    step::AbstractStep = ConstantStep(),
+                                                                                    stopconditions::Vector{SC} = [Best(1e-4)],
+                                                                                    maxiter::Integer = 100,
+                                                                                    dispinterval::Integer = 1
+                      ) where {T <: Number, SC <: AbstractStopCondition}
+```
 
 Compute the solution to the quadratic program ``min xᵀHx + bᵀx s.t. x ∈ χ`` where the set constraint
 ``χ`` is supplied as a projection operation that maps a value of ``x`` to a value inside the set ``χ``.
-The projection operator is specified as the function `proj`, which must take a single argument which is
+The projection operator is specified as the function `proj`, which must take a single argument that is
 a vector of type `T` (the current iterate) and return a vector of type `T` (the projection of the iterate
 onto the set ``Χ``).
 
@@ -99,9 +101,9 @@ The behavior of the algorithm can be modified using the keyword arguments to set
 * step - How the step length should be computed at each iteration.
 * stopconditions - A vector containing the stopping conditions that the algorithm uses to determine convergence.
                    A boolean OR of all the stopping conditions will be used, so when the first one is met, the
-                   algorithm will terminate.
+                   algorithm will terminate. Set to `nothing` to only use an iteration bound.
 * maxiter - The maximum number of iterations to perform
-* dispinterval - Print iteration information every `dispinterval` iterations. Set to 0 to disable printing
+* dispinterval - Print iteration information every `dispinterval` iterations. Set to 0 to disable printing.
 """
 function fastgradientmethod( H::AbstractMatrix{T}, b::AbstractVector{T}, proj::Function; x₀::AbstractVector{T} = zeros( T, size( b ) ),
                                                                                          L::Union{Nothing, T} = nothing,

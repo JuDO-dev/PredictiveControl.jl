@@ -1,5 +1,6 @@
 module FastGradientMethod
 
+using DocStringExtensions
 using LinearAlgebra
 using OSQP
 using Printf
@@ -18,7 +19,9 @@ include( "../iterationUtils/loop.jl" )
 include( "../iterationUtils/apply.jl" )
 
 """
+```julia
     AbstractStep
+```
 
 An abstract super type that is used to specify the step length computation in the
 Fast Gradient Method. Implementations of the step length computation should define
