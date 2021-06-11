@@ -3,9 +3,9 @@
 """
 mutable struct FGMSolver
     step::FGM.AbstractStep
-    cond::Vector{FGM.StopCondition}
+    cond::Vector{FGM.AbstractStopCondition}
 
-    function FGMSolver( step::FGM.AbstractStep = FGM.ConstantStep{T}(), sc::Vector{FGM.StopCondition} = [FGM.Best(1e-4)] )
+    function FGMSolver( step::FGM.AbstractStep = FGM.ConstantStep{T}(), sc::Vector{FGM.AbstractStopCondition} = [FGM.Best(1e-4)] )
         solver = new( step, sc )
 
         return solver

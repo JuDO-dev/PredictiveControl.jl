@@ -1,4 +1,5 @@
 using PredictiveControl
+using Test
 
 
 H = [ 10.0 0.0;
@@ -8,7 +9,7 @@ b = [ 2.0;
       4.0 ];
 
 # Run for only 40 iterations
-x, iter = PredictiveControl.FastGradientMethod.fastgradientmethod( H, b, x -> x, stopconditions = [FGM.Iteration(40)] )
+x, iter = PredictiveControl.FastGradientMethod.fastgradientmethod( H, b, x -> x, stopconditions = nothing, maxiter = 40 )
 @test iter == 40
 
 # Run until converged
@@ -34,5 +35,5 @@ x, iter = PredictiveControl.FastGradientMethod.fastgradientmethod( H, b, x -> ma
 
 
 # Test the variable steping
-x, iter = PredictiveControl.FastGradientMethod.fastgradientmethod( H, b, x -> x, step=FGM.VariableStep{Float64}(), stopconditions = [FGM.Best(1e-8)] )
+x, iter = PredictiveControl.FastGradientMethod.fastgradientmethod( H, b, x -> x, step=FGM.VariableStep(), stopconditions = [FGM.Best(1e-8)] )
 @test isapprox( x, [-0.2, -2.0], atol = 1e-4 )
