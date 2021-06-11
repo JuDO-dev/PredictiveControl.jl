@@ -34,7 +34,11 @@ function init!( cond::Conjugate, n, L, μ )
 end
 
 function (cond::Conjugate)( state::FGMState )
-    return abs( state.xₙ'*state.∇xₙ + norm( state.∇xₙ, 1 ) ) < cond.ϵₛ
+    return compute_conjugate( state ) < cond.ϵₛ
+end
+
+function compute_conjugate( state::FGMState )
+    return abs( state.xₙ'*state.∇xₙ + norm( state.∇xₙ, 1 ) )
 end
 
 

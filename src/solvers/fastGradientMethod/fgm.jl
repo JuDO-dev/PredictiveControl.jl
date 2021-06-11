@@ -2,8 +2,9 @@ module FastGradientMethod
 
 using LinearAlgebra
 using OSQP
-using SparseArrays
+using Printf
 using Roots
+using SparseArrays
 
 using Base.Iterators
 
@@ -14,6 +15,7 @@ export fastgradientmethod
 # Include the various iteration helpers
 include( "../iterationUtils/stopping.jl" )
 include( "../iterationUtils/loop.jl" )
+include( "../iterationUtils/apply.jl" )
 
 """
     AbstractStep
