@@ -1,6 +1,5 @@
 module FastGradientMethod
 
-using DocStringExtensions
 using LinearAlgebra
 using OSQP
 using Printf

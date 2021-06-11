@@ -19,20 +19,35 @@ struct StoppingConditionIterable{I, SC}
     condVec::Vector{SC}
 end
 
-function iterate( iter::StoppingConditionIterable, args... )
-    next = iterate( iter.iter, args... )
+function iterate( iter::StoppingConditionIterable )
+    next = iterate( iter.iter )
+    return dispatch( iter, next )
+end
 
+function iterate( iter::StoppingConditionIterable, (inst, next) )
+    if inst == :halt
+        return nothing
+    end
+
+    next = iterate( iter.iter, next )
+    return dispatch( iter, next )
+end
+
+
+function dispatch( iter::StoppingConditionIterable, next )
     if next === nothing
         return nothing
     end
 
+    nextInst = :continue
+
     for s in iter.condVec
         if s( next[2] )
-            return nothing
+            nextInst = :halt
         end
     end
 
-    return next
+    return (next[1], (nextInst, next[2]))
 end
 
 """

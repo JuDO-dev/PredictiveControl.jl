@@ -146,7 +146,7 @@ function fastgradientmethod( H::AbstractMatrix{T}, b::AbstractVector{T}, proj::F
     end
 
     iter = take( iter, maxiter )
-    iter = enumerate(iter)
+    iter = enumerate( iter )
 
     # Configure the printing of iteration information
     if dispinterval > 0
