@@ -11,7 +11,9 @@ include( "../src/utilities.jl" )
 include( "testUtils.jl" )
 
 @testset "PredictiveControl" begin
-    include( "typeTests.jl" )
+    @testset "Problem Types" begin
+        @safetestset "LTI CLQR" begin include( "typeTests.jl" ) end
+    end
 
     @testset "Fully condensed problem" begin
         @safetestset "Initial Propagation Matrix" begin include( "./matrices/FullCondensed_InitialPropagation.jl" ) end
