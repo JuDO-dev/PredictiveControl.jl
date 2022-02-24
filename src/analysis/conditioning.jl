@@ -25,7 +25,7 @@ function conditionBound( clqr::ConstrainedTimeInvariantLQR; L::Matrix = zeros(Fl
     desc = DescriptorSystems.dss( sys.A, sys.B, sys.C, sys.D; Ts=sys.Ts )
 
     # This is the matrix symbol for the Hessian
-    fullsys = L*( desc'*clqr.Qₖ*desc + clqr.R )*L'
+    fullsys = L*( desc'*clqr.Qₖ*desc + desc'*clqr.K'*clqr.R + clqr.R*clqr.K*desc + clqr.R )*L'
 
     # Actually compute the condition number by using the H\_infty norm
     (maxeig, )    = DescriptorSystems.ghinfnorm( fullsys )

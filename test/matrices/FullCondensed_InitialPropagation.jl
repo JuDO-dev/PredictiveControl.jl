@@ -49,30 +49,16 @@ for i = 1:N
     @test b == sys.A^i
 end
 
-
-###################################################################
-# Test the propagation of the initial state through the controlled
-# system to form the new input sequence
-###################################################################
-K = [1.0 0.0 1.0 0.0;
-     0.0 1.0 0.0 1.0]
-
-csys = StateSpace( A - B*K, B, C, 0, 0.1 )
-
-# Horizon must be greater than 1
-@test_throws DomainError MPC.inputinitialpropagation( csys, K, -1 )
-@test_throws DomainError MPC.inputinitialpropagation( csys, K,  0 )
-
 # Form a propagation matrix to test
-mat = MPC.inputinitialpropagation( csys, K, N )
+mat = MPC.initialpropagation( sys, N, ive = true )
 
 @test blocksize( mat ) == (N, 1)
-@test size( mat ) == (nu*N, nx)
+@test size( mat ) == (nx*N, nx)
 
 # Make sure the blocks have the proper values for the system
-for i = 1:N
-    b = view( mat, Block( i, 1 ) )
+for i = 0:N-1
+    b = view( mat, Block( i+1, 1 ) )
 
-    @test size( b ) == (nu, nx)
-    @test b == -K*csys.A^(i-1)
+    @test size( b ) == (nx, nx)
+    @test b == sys.A^i
 end

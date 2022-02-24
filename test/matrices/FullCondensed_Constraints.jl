@@ -29,7 +29,7 @@ sysStab = StateSpace( Astab, B, C, D, Ts )
 Q = [1.0 1.0;
      1.0 1.0]
 R = [1.0]
-N = 2
+
 
 ###############################################
 ## Test only input constraints
@@ -40,6 +40,8 @@ F = [  1.0;
       -1.0 ]
 g = [ 5.0;
       5.0 ]
+
+N = 2
 
 clqr = ConstrainedTimeInvariantLQR( sysStab, N, Q, R, :Q, F = F , E = E, g = g )
 G, L, ḡ = PredictiveControl.inequalityconstraints( clqr, PrimalFullCondensing )
@@ -110,6 +112,8 @@ F = [ 0.0;
 g = [ 5.0;
       5.0 ]
 
+N = 3
+
 clqr = ConstrainedTimeInvariantLQR( sysStab, N, Q, R, :Q, F = F , E = E, g = g )
 G, L, ḡ = PredictiveControl.inequalityconstraints( clqr, PrimalFullCondensing )
 
@@ -120,16 +124,12 @@ sys = PredictiveControl.getsystem( clqr )
 @test size(L) == (2*N, n)
 @test size(G) == (2*N, m*N)
 
-@test G == PredictiveControl.prediction( sys, clqr.N )
-
-@test L[Block(1,1)] == -E*sys.A
-@test L[Block(2,1)] == -E*sys.A^2
-
 @test ḡ[Block(1)] == g
 @test ḡ[Block(2)] == g
 
 # Test with all states in bounds
 u  = [ 0.0;
+       0.0;
        0.0 ]
 x₀ = [ 0.0;
        0.0 ]
@@ -137,7 +137,9 @@ x₀ = [ 0.0;
 x₁ = sysStab.A*x₀ + sysStab.B*u[1]
 x₂ = sysStab.A*x₁ + sysStab.B*u[2]
 
-e  = [ x₁[1] - g[1];    # States @t=1
+e  = [ x₀[1] - g[1];    # States @t=0
+       x₀[2] - g[2];    # States @t=0
+       x₁[1] - g[1];    # States @t=1
        x₁[2] - g[2];    # States @t=1
        x₂[1] - g[1];    # States @t=2
        x₂[2] - g[2] ]   # States @t=2
@@ -146,6 +148,7 @@ testconstraint( G, L, ḡ, u, x₀, e )
 
 # Test with all states out of bounds
 u  = [ 6.0;
+       6.0;
        6.0 ]
 x₀ = [ 20.0;
        20.0 ]
@@ -153,7 +156,9 @@ x₀ = [ 20.0;
 x₁ = sysStab.A*x₀ + sysStab.B*u[1]
 x₂ = sysStab.A*x₁ + sysStab.B*u[2]
 
-e  = [ x₁[1] - g[1];    # States @t=1
+e  = [ x₀[1] - g[1];    # States @t=0
+       x₀[2] - g[2];    # States @t=0
+       x₁[1] - g[1];    # States @t=1
        x₁[2] - g[2];    # States @t=1
        x₂[1] - g[1];    # States @t=2
        x₂[2] - g[2] ]   # States @t=2
@@ -162,6 +167,7 @@ testconstraint( G, L, ḡ, u, x₀, e )
 
 # Test with one inbounds, one out of bounds
 u  = [  5.0;
+        5.0;
         5.0 ]
 x₀ = [ 0.0;
        0.0 ]
@@ -169,7 +175,9 @@ x₀ = [ 0.0;
 x₁ = sysStab.A*x₀ + sysStab.B*u[1]
 x₂ = sysStab.A*x₁ + sysStab.B*u[2]
 
-e  = [ x₁[1] - g[1];    # States @t=1
+e  = [ x₀[1] - g[1];    # States @t=0
+       x₀[2] - g[2];    # States @t=0
+       x₁[1] - g[1];    # States @t=1
        x₁[2] - g[2];    # States @t=1
        x₂[1] - g[1];    # States @t=2
        x₂[2] - g[2] ]   # States @t=2
@@ -193,6 +201,8 @@ g = [ 5.0;
       5.0;
       5.0 ]
 
+N = 3
+
 clqr = ConstrainedTimeInvariantLQR( sysStab, N, Q, R, :Q, F = F , E = E, g = g )
 G, L, ḡ = PredictiveControl.inequalityconstraints( clqr, PrimalFullCondensing )
 
@@ -203,19 +213,12 @@ sys = PredictiveControl.getsystem( clqr )
 @test size(L) == (4*N, n)
 @test size(G) == (4*N, m*N)
 
-@test G[Block(1,1)] == E*sys.B + F
-@test G[Block(2,2)] == E*sys.B + F
-@test G[Block(2,1)] == E*sys.A*sys.B
-@test G[Block(1,2)] == zeros( Float64, (4, m) )
-
-@test L[Block(1,1)] == -E*sys.A
-@test L[Block(2,1)] == -E*sys.A^2
-
 @test ḡ[Block(1)] == g
 @test ḡ[Block(2)] == g
 
 # Test with all states and inputs in bounds
 u  = [ 0.0;
+       0.0
        0.0 ]
 x₀ = [ 0.0;
        0.0 ]
@@ -223,19 +226,24 @@ x₀ = [ 0.0;
 x₁ = sysStab.A*x₀ + sysStab.B*u[1]
 x₂ = sysStab.A*x₁ + sysStab.B*u[2]
 
-e  = [   x₁[1] - g[1];      # States @t=1
+e  = [   x₀[1] - g[1];      # States @t=0
+         x₀[2] - g[2];      # States @t=0
+          u[1] - g[3];      # Inputs @t=0
+       -( u[1] + g[4] );    # Inputs @t=0
+         x₁[1] - g[1];      # States @t=1
          x₁[2] - g[2];      # States @t=1
-          u[1] - g[1];      # Inputs @t=1
-       -( u[1] + g[2] );    # Inputs @t=1
+          u[2] - g[3];      # Inputs @t=1
+       -( u[2] + g[4] );    # Inputs @t=1
          x₂[1] - g[1];      # States @t=2
          x₂[2] - g[2];      # States @t=2
-          u[2] - g[1];      # Inputs @t=2
-       -( u[2] + g[2] ) ]   # Inputs @t=2
+          u[3] - g[3];      # Inputs @t=2
+       -( u[3] + g[4] ) ]   # Inputs @t=2
 
 testconstraint( G, L, ḡ, u, x₀, e )
 
 # Test with all inputs out of bounds, states out of bounds
 u  = [ 6.0;
+       6.0;
        6.0 ]
 x₀ = [ 20.0;
        20.0 ]
@@ -243,19 +251,24 @@ x₀ = [ 20.0;
 x₁ = sysStab.A*x₀ + sysStab.B*u[1]
 x₂ = sysStab.A*x₁ + sysStab.B*u[2]
 
-e  = [   x₁[1] - g[1];      # States @t=1
+e  = [   x₀[1] - g[1];      # States @t=0
+         x₀[2] - g[2];      # States @t=0
+          u[1] - g[3];      # Inputs @t=0
+       -( u[1] + g[4] );    # Inputs @t=0
+         x₁[1] - g[1];      # States @t=1
          x₁[2] - g[2];      # States @t=1
-          u[1] - g[1];      # Inputs @t=1
-       -( u[1] + g[2] );    # Inputs @t=1
+          u[2] - g[3];      # Inputs @t=1
+       -( u[2] + g[4] );    # Inputs @t=1
          x₂[1] - g[1];      # States @t=2
          x₂[2] - g[2];      # States @t=2
-          u[2] - g[1];      # Inputs @t=2
-       -( u[2] + g[2] ) ]   # Inputs @t=2
+          u[3] - g[3];      # Inputs @t=2
+       -( u[3] + g[4] ) ]   # Inputs @t=2
 
 testconstraint( G, L, ḡ, u, x₀, e )
 
 # Test with one inbounds, one out of bounds
 u  = [ 5.0;
+       6.0;
        6.0 ]
 x₀ = [ 0.0;
        0.0 ]
@@ -263,14 +276,18 @@ x₀ = [ 0.0;
 x₁ = sysStab.A*x₀ + sysStab.B*u[1]
 x₂ = sysStab.A*x₁ + sysStab.B*u[2]
 
-e  = [   x₁[1] - g[1];      # States @t=1
+e  = [   x₀[1] - g[1];      # States @t=0
+         x₀[2] - g[2];      # States @t=0
+          u[1] - g[3];      # Inputs @t=0
+       -( u[1] + g[4] );    # Inputs @t=0
+         x₁[1] - g[1];      # States @t=1
          x₁[2] - g[2];      # States @t=1
-          u[1] - g[1];      # Inputs @t=1
-       -( u[1] + g[2] );    # Inputs @t=1
+          u[2] - g[3];      # Inputs @t=1
+       -( u[2] + g[4] );    # Inputs @t=1
          x₂[1] - g[1];      # States @t=2
          x₂[2] - g[2];      # States @t=2
-          u[2] - g[1];      # Inputs @t=2
-       -( u[2] + g[2] ) ]   # Inputs @t=2
+          u[3] - g[3];      # Inputs @t=2
+       -( u[3] + g[4] ) ]   # Inputs @t=2
 
 testconstraint( G, L, ḡ, u, x₀, e )
 
@@ -284,6 +301,8 @@ F = [ 1.0;
      -1.0 ]
 g = [ 5.0;
       5.0 ]
+
+N = 2
 
 clqr = ConstrainedTimeInvariantLQR( sysStab, N, Q, R, :Q, K = :dlqr, F = F , E = E, g = g )
 G, L, ḡ = PredictiveControl.inequalityconstraints( clqr, PrimalFullCondensing )
@@ -364,6 +383,8 @@ F = [ 0.0;
 g = [ 5.0;
       5.0 ]
 
+N = 3
+
 clqr = ConstrainedTimeInvariantLQR( sysStab, N, Q, R, :Q, K = :dlqr, F = F , E = E, g = g )
 G, L, ḡ = PredictiveControl.inequalityconstraints( clqr, PrimalFullCondensing )
 
@@ -380,6 +401,7 @@ sys = PredictiveControl.getsystem( clqr )
 
 # Test with all states in bounds
 v  = [ 0.0;
+       0.0;
        0.0 ]
 x₀ = [ 0.0;
        0.0 ]
@@ -389,7 +411,9 @@ x₁ = sysStab.A*x₀ + sysStab.B*u₀
 u₁ = -(clqr.K*x₁)[1] + v[2]
 x₂ = sysStab.A*x₁ + sysStab.B*u₁
 
-e  = [ x₁[1] - g[1];    # State @t=1
+e  = [ x₀[1] - g[1];    # State @t=0
+       x₀[2] - g[2];    # State @t=0
+       x₁[1] - g[1];    # State @t=1
        x₁[2] - g[2];    # State @t=1
        x₂[1] - g[1];    # State @t=2
        x₂[2] - g[2] ]   # State @t=2
@@ -398,6 +422,7 @@ testconstraint( G, L, ḡ, v, x₀, e )
 
 # Test with all states out of bounds
 v  = [ 30.0;
+       30.0;
        30.0 ]
 x₀ = [ 20.0;
        20.0 ]
@@ -407,7 +432,9 @@ x₁ = sysStab.A*x₀ + sysStab.B*u₀
 u₁ = -(clqr.K*x₁)[1] + v[2]
 x₂ = sysStab.A*x₁ + sysStab.B*u₁
 
-e  = [ x₁[1] - g[1];    # State @t=1
+e  = [ x₀[1] - g[1];    # State @t=0
+       x₀[2] - g[2];    # State @t=0
+       x₁[1] - g[1];    # State @t=1
        x₁[2] - g[2];    # State @t=1
        x₂[1] - g[1];    # State @t=2
        x₂[2] - g[2] ]   # State @t=2
@@ -416,6 +443,7 @@ testconstraint( G, L, ḡ, v, x₀, e )
 
 # Test with one inbounds, one out of bounds
 v  = [ 5.0;
+       10.0;
        10.0 ]
 x₀ = [ 0.0;
        0.0 ]
@@ -425,7 +453,9 @@ x₁ = sysStab.A*x₀ + sysStab.B*u₀
 u₁ = -(clqr.K*x₁)[1] + v[2]
 x₂ = sysStab.A*x₁ + sysStab.B*u₁
 
-e  = [ x₁[1] - g[1];    # State @t=1
+e  = [ x₀[1] - g[1];    # State @t=0
+       x₀[2] - g[2];    # State @t=0
+       x₁[1] - g[1];    # State @t=1
        x₁[2] - g[2];    # State @t=1
        x₂[1] - g[1];    # State @t=2
        x₂[2] - g[2] ]   # State @t=2
@@ -464,6 +494,7 @@ sys = PredictiveControl.getsystem( clqr )
 
 # Test with all states and inputs in bounds
 v  = [ 0.0;
+       0.0;
        0.0 ]
 x₀ = [ 0.0;
        0.0 ]
@@ -472,20 +503,26 @@ u₀ = -(clqr.K*x₀)[1] + v[1]
 x₁ = sysStab.A*x₀ + sysStab.B*u₀
 u₁ = -(clqr.K*x₁)[1] + v[2]
 x₂ = sysStab.A*x₁ + sysStab.B*u₁
+u₂ = -(clqr.K*x₂)[1] + v[3]
 
-e  = [    x₁[1] - g[1];     # State  @t=1
-          x₁[2] - g[2];     # State  @t=1
-          u₀    - g[3];     # Inputs @t=0
-       -( u₀    + g[4] );   # Inputs @t=0
-          x₂[1] - g[1];     # State  @t=2
-          x₂[2] - g[2]      # State  @t=2
-          u₁    - g[3];     # Inputs @t=1
-       -( u₁    + g[4] ) ]  # Inputs @t=1
+e  = [    x₀[1] - g[1];      # States @t=0
+          x₀[2] - g[2];      # States @t=0
+          u₀[1] - g[3];      # Inputs @t=0
+       -( u₀[1] + g[4] );    # Inputs @t=0
+          x₁[1] - g[1];      # States @t=1
+          x₁[2] - g[2];      # States @t=1
+          u₁[1] - g[3];      # Inputs @t=1
+       -( u₁[1] + g[4] );    # Inputs @t=1
+          x₂[1] - g[1];      # States @t=2
+          x₂[2] - g[2];      # States @t=2
+          u₂[1] - g[3];      # Inputs @t=2
+       -( u₂[1] + g[4] ) ]   # Inputs @t=2
 
 testconstraint( G, L, ḡ, v, x₀, e )
 
 # Test with all inputs out of bounds, states out of bounds
 v  = [ 6.0;
+       6.0;
        6.0 ]
 x₀ = [ 20.0;
        20.0 ]
@@ -494,20 +531,26 @@ u₀ = -(clqr.K*x₀)[1] + v[1]
 x₁ = sysStab.A*x₀ + sysStab.B*u₀
 u₁ = -(clqr.K*x₁)[1] + v[2]
 x₂ = sysStab.A*x₁ + sysStab.B*u₁
+u₂ = -(clqr.K*x₂)[1] + v[3]
 
-e  = [    x₁[1] - g[1];     # State  @t=1
-          x₁[2] - g[2];     # State  @t=1
-          u₀    - g[3];     # Inputs @t=0
-       -( u₀    + g[4] );   # Inputs @t=0
-          x₂[1] - g[1];     # State  @t=2
-          x₂[2] - g[2]      # State  @t=2
-          u₁    - g[3];     # Inputs @t=1
-       -( u₁    + g[4] ) ]  # Inputs @t=1
+e  = [    x₀[1] - g[1];      # States @t=0
+          x₀[2] - g[2];      # States @t=0
+          u₀[1] - g[3];      # Inputs @t=0
+       -( u₀[1] + g[4] );    # Inputs @t=0
+          x₁[1] - g[1];      # States @t=1
+          x₁[2] - g[2];      # States @t=1
+          u₁[1] - g[3];      # Inputs @t=1
+       -( u₁[1] + g[4] );    # Inputs @t=1
+          x₂[1] - g[1];      # States @t=2
+          x₂[2] - g[2];      # States @t=2
+          u₂[1] - g[3];      # Inputs @t=2
+       -( u₂[1] + g[4] ) ]   # Inputs @t=2
 
 testconstraint( G, L, ḡ, v, x₀, e )
 
 # Test with one inbounds, one out of bounds
 v  = [ 5.0;
+       6.0;
        6.0 ]
 x₀ = [ 0.0;
        0.0 ]
@@ -516,14 +559,19 @@ u₀ = -(clqr.K*x₀)[1] + v[1]
 x₁ = sysStab.A*x₀ + sysStab.B*u₀
 u₁ = -(clqr.K*x₁)[1] + v[2]
 x₂ = sysStab.A*x₁ + sysStab.B*u₁
+u₂ = -(clqr.K*x₂)[1] + v[3]
 
-e  = [    x₁[1] - g[1];     # State  @t=1
-          x₁[2] - g[2];     # State  @t=1
-          u₀    - g[3];     # Inputs @t=0
-       -( u₀    + g[4] );   # Inputs @t=0
-          x₂[1] - g[1];     # State  @t=2
-          x₂[2] - g[2]      # State  @t=2
-          u₁    - g[3];     # Inputs @t=1
-       -( u₁    + g[4] ) ]  # Inputs @t=1
+e  = [    x₀[1] - g[1];      # States @t=0
+          x₀[2] - g[2];      # States @t=0
+          u₀[1] - g[3];      # Inputs @t=0
+       -( u₀[1] + g[4] );    # Inputs @t=0
+          x₁[1] - g[1];      # States @t=1
+          x₁[2] - g[2];      # States @t=1
+          u₁[1] - g[3];      # Inputs @t=1
+       -( u₁[1] + g[4] );    # Inputs @t=1
+          x₂[1] - g[1];      # States @t=2
+          x₂[2] - g[2];      # States @t=2
+          u₂[1] - g[3];      # Inputs @t=2
+       -( u₂[1] + g[4] ) ]   # Inputs @t=2
 
 testconstraint( G, L, ḡ, v, x₀, e )

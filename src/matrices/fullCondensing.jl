@@ -47,18 +47,28 @@ end
 
 
 """
-    initialpropagation( sys::StateSpace, N::Integer )
+    initialpropagation( sys::StateSpace, N::Integer; ive::Bool = false )
 
 Form the matrix ``Φ`` that propagates the initial condition ``x₀`` in the linear system `sys` across the horizon `N`.
+When `ive` is true, the initial condition ``x₀`` is embedded in the resulting state vector
 
 # Extended help
 
-This matrix consists of a column of the blocks ``A^i`` where ``i`` is the row number, forming the matrix
+When `ive` is false, this matrix consists of a column of the blocks ``A^i`` where ``i`` is the row number, forming the matrix
 ```math
 ⎡ A  ⎤
   ⎢ A² ⎥
   ⎢ A³ ⎥
   ⎢ A⁴ ⎥
+  ⎣ ⋮  ⎦
+```
+
+When `ive` is true, this matrix consists of a column of the blocks ``A^i-1`` where ``i`` is the row number, forming the matrix
+```math
+⎡ I  ⎤
+  ⎢ A² ⎥
+  ⎢ A² ⎥
+  ⎢ A³ ⎥
   ⎣ ⋮  ⎦
 ```
 
@@ -68,55 +78,14 @@ the equation ``x = Φx₀``.
 The full state vector for a horizon can be computed as ``x = Γu + Φx₀``, where ``Γ`` is the prediction matrix
 from [`prediction`](@ref).
 """
-function initialpropagation( sys::StateSpace, N::Integer )
+function initialpropagation( sys::StateSpace, N::Integer; ive::Bool = false )
     if( N < 1 )
         throw( DomainError( N, "Horizon length must be greater than 1" ) )
     end
 
-    blockGen = (sys.A^i for i=1:N)
+    sub = ive ? 1 : 0
 
-    # The mortar function requires the passed array to have ndims=2, so reshape to
-    # have an array with 2 dimensions even though there is only one column
-    blocks = reshape( collect( blockGen ),  (N, 1) )
-
-    return mortar( blocks )
-end
-
-
-function inputprediction( sys::StateSpace, K::AbstractArray, N::Integer )
-    if( N < 1 )
-        throw( DomainError( N, "Horizon length must be greater than 1" ) )
-    end
-
-    nu = ninputs( sys )
-    nx = nstates( sys )
-    mt = eltype( sys.A )
-
-    # Create the prediction matrix for the controlled system
-    Γ = prediction( sys, N )
-    K̄ = blockkron( 1.0*I(N), K )
-
-    zerorow = zeros( Float64, (nu, nu*N) )
-
-    Γ = -K̄*Γ
-    Γ = vcat( zerorow, Γ )
-
-    eye = blockkron( 1.0*I(N), Matrix( 1.0*I(nu) ) )
-    eye = vcat( eye, zerorow )
-
-    Γ = Γ + eye
-    Γ = Γ[1:N*nu, 1:N*nu]
-
-    return BlockArray{ mt }( Γ, [nu for i = 1:N], [nu for i = 1:N] )
-end
-
-
-function inputinitialpropagation( sys::StateSpace, K::AbstractArray, N::Integer )
-    if( N < 1 )
-        throw( DomainError( N, "Horizon length must be greater than 1" ) )
-    end
-
-    blockGen = (-K*sys.A^i for i=0:(N-1))
+    blockGen = (sys.A^(i-sub) for i=1:N)
 
     # The mortar function requires the passed array to have ndims=2, so reshape to
     # have an array with 2 dimensions even though there is only one column
@@ -133,23 +102,25 @@ Form the complete Hessian for the constrained time-invariant LQR problem `clqr` 
 condensed form.
 """
 function hessian( clqr::ConstrainedTimeInvariantLQR, ::Type{PrimalFullCondensing} )
-    sys = getsystem( clqr )
+    sysₖ = getsystem( clqr, prestabilized = true )
     N   = clqr.N
-    nx  = nstates( sys )
-    nu  = ninputs( sys )
+    nx  = nstates( sysₖ )
+    nu  = ninputs( sysₖ )
 
-    Γ = prediction( sys, N )
+    Iₙ = 1.0*I(N)
+    Γₖ = prediction( sysₖ, N )
 
-    Q̅ = blockkron( 1.0*I(N), clqr.Qₖ )
-    S̅ = blockkron( 1.0*I(N), clqr.S  )
-    R̅ = blockkron( 1.0*I(N), clqr.R  )
+    Q̄ₖ = blockkron( Iₙ,  clqr.Qₖ )
+    S̄  = blockkron( Iₙ,  clqr.S  )
+    R̄  = blockkron( Iₙ,  clqr.R  )
+    K̄  = blockkron( Iₙ, -clqr.K  )
 
-    Q̅[Block( N, N )] = clqr.P
-    S̅[Block( N, N )] = zeros( eltype( clqr.S ), size( clqr.S ) )
+    Q̄ₖ[Block( N, N )] = clqr.P
+    S̄[Block( N, N )]  = zeros( eltype( clqr.S ), size( clqr.S ) )
 
     # Pass the result through the Hermitian type to cleanup numerical errors that can occur
     # making it non-symmetric (they are on the order of 10e-17)
-    return Hermitian( Γ'*Q̅*Γ + Γ'*S̅ + S̅'*Γ + R̅ )
+    return Hermitian( Γₖ'*(Q̄ₖ + S̄ *K̄ + K̄'*S̄' )*Γₖ + Γₖ'*(K̄' *R̄ + S̄ ) + (R̄ *K̄ + S̄')*Γₖ + R̄  )
 end
 
 
@@ -160,61 +131,60 @@ Form the vector of coefficients for the linear term of the fully condensed quadr
 CLQR problem defined by `clqr`.
 """
 function linearcoefficients( clqr::ConstrainedTimeInvariantLQR, ::Type{PrimalFullCondensing} )
-    sys = getsystem( clqr )
-    N   = clqr.N
-    nx  = nstates( sys )
-    nu  = ninputs( sys )
+    sysₖ = getsystem( clqr, prestabilized = true )
+    N    = clqr.N
+    nx   = nstates( sysₖ )
+    nu   = ninputs( sysₖ )
 
-    Γ = prediction( sys, N )
-    Φ = initialpropagation( sys, N )
+    Iₙ = 1.0*I(N)
+    Γₖ = prediction( sysₖ, N )
+    Φₖ = initialpropagation( sysₖ, N )
 
-    Q̅ = blockkron( 1.0*I(N), clqr.Qₖ )
-    S̅ = blockkron( 1.0*I(N), clqr.S  )
+    Q̄ₖ = blockkron( Iₙ,  clqr.Qₖ )
+    S̄  = blockkron( Iₙ,  clqr.S  )
+    R̄  = blockkron( Iₙ,  clqr.R  )
+    K̄  = blockkron( Iₙ, -clqr.K  )
 
-    Q̅[Block( N, N )] = clqr.P
-    S̅[Block( N, N )] = zeros( eltype( clqr.S ), size( clqr.S ) )
+    Q̄ₖ[Block( N, N )] = clqr.P
+    S̄[Block( N, N )]  = zeros( eltype( clqr.S ), size( clqr.S ) )
 
-    return Γ'*Q̅*Φ + S̅'*Φ
+    # Temporary product used in two places
+    T = 1.0*I(N*nu) + Γₖ'*K̄'
+
+    return ((Γₖ'*S̄ + T*R̄')*K̄ + T*S̄' + Γₖ'*Q̄ₖ')*Φₖ
 end
 
 
 function inequalityconstraints( clqr::ConstrainedTimeInvariantLQR, ::Type{PrimalFullCondensing} )
-    # For the initial computations we want the non-pre-stabilized system
-    sys = getsystem( clqr, prestabilized = false )
+    sysₖ = getsystem( clqr, prestabilized = true )
 
-    # Find the number of constraints and the system size
-    N   = clqr.N
-    nC  = size( clqr.E, 1 );    # Number of constraints
-    n, m  = size( sys.B );
+    mt   = eltype( sysₖ.A )
+    N    = clqr.N
+    nx   = nstates( sysₖ )
+    nu   = ninputs( sysₖ )
+    Iₙ   = 1.0*I(N)
 
     # Get the condensed initial propagation matrix
-    Φ = initialpropagation( sys, N )
+    Φ̃ₖ = initialpropagation( sysₖ, N, ive = true )
 
-    # Get the prediction matrix for the system
-    Γ = prediction( sys, N )
+    # Form the prediction matrix with the initial value embedded
+    Γₖ = prediction( sysₖ, N )
+    Γ̃ₖ = BlockArray{ mt }( zeros( mt, nx*N, nu*N ), [nx for i = 1:N], [nu for i = 1:N] )
+    [Γ̃ₖ[Block(i, j)] = Γₖ[Block(i-1, j)] for i=2:N, j=1:N]
 
     # Create the component matrices
-    Ē = blockkron( 1.0*I(N), clqr.E )
-    F̄ = blockkron( 1.0*I(N), clqr.F )
+    Ē  = blockkron( Iₙ,  clqr.E )
+    F̄  = blockkron( Iₙ,  clqr.F )
+    K̄  = blockkron( Iₙ, -clqr.K  )
+
+    # Common matrix
+    T = Ē + F̄ *K̄
 
     # Compute the coefficient matrix of the linear inequality constraints
-    G = Ē*Γ + F̄;
+    G = T*Γ̃ₖ + F̄
 
     # Compute the initial state matrix for the RHS of the constraints
-    L = -Ē*Φ;
-
-    if isprestabilized( clqr )
-        # Get the pre-stabilized matrices
-        sysₖ = getsystem( clqr )
-        Γₖ   = inputprediction( sysₖ, clqr.K, N )
-        Φₖ   = inputinitialpropagation( sysₖ, clqr.K, N )
-
-        # Modify the initial state coefficients to be in the new input space
-        L = L - G*Φₖ
-
-        # Modify the coefficient matrix to be in the new input space
-        G = G * Γₖ
-    end
+    L = -T*Φ̃ₖ;
 
     # Compute the constant vector for the RHS
     g = blockkron( ones( Float64, (N) ), clqr.g )
