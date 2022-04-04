@@ -103,24 +103,61 @@ condensed form.
 """
 function hessian( clqr::ConstrainedTimeInvariantLQR, ::Type{PrimalFullCondensing} )
     sysₖ = getsystem( clqr, prestabilized = true )
-    N   = clqr.N
-    nx  = nstates( sysₖ )
-    nu  = ninputs( sysₖ )
+    N    = clqr.N
+    nₓ   = nstates( sysₖ )
+    nᵤ   = ninputs( sysₖ )
 
     Iₙ = 1.0*I(N)
     Γₖ = prediction( sysₖ, N )
 
-    Q̄ₖ = blockkron( Iₙ,  clqr.Qₖ )
-    S̄  = blockkron( Iₙ,  clqr.S  )
-    R̄  = blockkron( Iₙ,  clqr.R  )
-    K̄  = blockkron( Iₙ, -clqr.K  )
+    Q = clqr.Q
+    S = clqr.S
+    K = clqr.K
+    R = clqr.R
+
+    Qₖ = Q - K'*S' - S*K + K'*R*K
+    Sₖ = S - K'*R
+
+    Q̄ₖ = blockkron( Iₙ, Qₖ )
+    S̄ₖ = blockkron( Iₙ, Sₖ )
+    R̄  = blockkron( Iₙ, R  )
 
     Q̄ₖ[Block( N, N )] = clqr.P
-    S̄[Block( N, N )]  = zeros( eltype( clqr.S ), size( clqr.S ) )
+    S̄ₖ[Block( N, N )] = zeros( eltype( clqr.S ), size( clqr.S ) ) - K'*R
 
     # Pass the result through the Hermitian type to cleanup numerical errors that can occur
     # making it non-symmetric (they are on the order of 10e-17)
-    return Hermitian( Γₖ'*(Q̄ₖ + S̄ *K̄ + K̄'*S̄' )*Γₖ + Γₖ'*(K̄' *R̄ + S̄ ) + (R̄ *K̄ + S̄')*Γₖ + R̄  )
+    return Hermitian( Γₖ'*Q̄ₖ*Γₖ + Γₖ'*S̄ₖ + S̄ₖ'*Γₖ + R̄  )
+end
+
+function hessian_shifted( clqr::ConstrainedTimeInvariantLQR, ::Type{PrimalFullCondensing} )
+    sysₖ = getsystem( clqr, prestabilized = true )
+    mt   = eltype( sysₖ.A )
+    N    = clqr.N
+    N₁   = N+1
+    nₓ   = nstates( sysₖ )
+    nᵤ   = ninputs( sysₖ )
+
+    Iₙ  = 1.0*I(N)
+    Iₙ₁ = 1.0*I(N₁)
+
+    # Form the prediction matrix with the initial value embedded
+    Γₖ = prediction( sysₖ, N₁ )
+    Γ̃ₖ = BlockArray{ mt }( zeros( mt, nₓ*N₁, nᵤ*N ), [nₓ for i = 1:N₁], [nᵤ for i = 1:N] )
+    [Γ̃ₖ[Block(i, j)] = Γₖ[Block(i-1, j)] for i=2:N₁, j=1:N]
+
+    Q̄ₖ = blockkron( Iₙ₁,  clqr.Q )
+    S̄  = blockkron(  Iₙ,  clqr.S )
+    R̄  = blockkron(  Iₙ,  clqr.R )
+    K̄  = blockkron(  Iₙ, -clqr.K )
+
+    Q̄ₖ[Block( N₁, N₁ )] = clqr.P
+    S̄ = vcat( S̄, zeros( eltype( clqr.S ), (nₓ, N*nᵤ ) ) )
+    K̄ = hcat( K̄, zeros( eltype( clqr.K ), (N*nᵤ, nₓ ) ) )
+
+    # Pass the result through the Hermitian type to cleanup numerical errors that can occur
+    # making it non-symmetric (they are on the order of 10e-17)
+    return Hermitian( Γ̃ₖ'*(Q̄ₖ + K̄'*R̄*K̄ + S̄ *K̄ + K̄'*S̄' )*Γ̃ₖ + Γ̃ₖ'*(K̄' *R̄ + S̄ ) + (R̄ *K̄ + S̄')*Γ̃ₖ + R̄  )
 end
 
 
@@ -173,12 +210,13 @@ function inequalityconstraints( clqr::ConstrainedTimeInvariantLQR, ::Type{Primal
     [Γ̃ₖ[Block(i, j)] = Γₖ[Block(i-1, j)] for i=2:N, j=1:N]
 
     # Create the component matrices
-    Ē  = blockkron( Iₙ,  clqr.E )
-    F̄  = blockkron( Iₙ,  clqr.F )
-    K̄  = blockkron( Iₙ, -clqr.K  )
+    Ē  = blockkron( Iₙ, clqr.E )
+    F̄  = blockkron( Iₙ, clqr.F )
+    K̄  = blockkron( Iₙ, clqr.K  )
 
     # Common matrix
-    T = Ē + F̄ *K̄
+    # The minus sign here comes from the fact we have a negative feedback controller (u = -Kx)
+    T = Ē - F̄ *K̄
 
     # Compute the coefficient matrix of the linear inequality constraints
     G = T*Γ̃ₖ + F̄

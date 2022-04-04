@@ -2,8 +2,8 @@
 # Import this because it is only used in conditionBound, and it has some methods that conflict with ControlSystems
 import DescriptorSystems
 
-function conditionBound( clqr::ConstrainedTimeInvariantLQR; L::Matrix = zeros(Float64, 1, 1) )
-    sys = getsystem( clqr )
+function conditionBound( clqr::ConstrainedTimeInvariantLQR; L::Matrix = zeros(Float64, 1, 1), samplingPoints::Int = 0 )
+    sys = getsystem( clqr, prestabilized = true )
     nx  = nstates( sys )
     nu  = ninputs( sys )
 
@@ -21,18 +21,75 @@ function conditionBound( clqr::ConstrainedTimeInvariantLQR; L::Matrix = zeros(Fl
         L = 1.0*I(nu)
     end
 
-    # The adjoint system is actually a descriptor system, so we need to form one for our computations
-    desc = DescriptorSystems.dss( sys.A, sys.B, sys.C, sys.D; Ts=sys.Ts )
+    if samplingPoints == 0
+        # The adjoint system is actually a descriptor system, so we need to form one for our computations
+        #z = DescriptorSystems.dss( DescriptorSystems.rtf(:z; Ts=sys.Ts) )
+        #desc = z * DescriptorSystems.dss( sys.A, sys.B, sys.C, sys.D; Ts=sys.Ts )
 
-    # This is the matrix symbol for the Hessian
-    fullsys = L*( desc'*clqr.Qₖ*desc + desc'*clqr.K'*clqr.R + clqr.R*clqr.K*desc + clqr.R )*L'
+        desc = DescriptorSystems.dss( sys.A, sys.B, sys.C, sys.D; Ts=sys.Ts )
 
-    # Actually compute the condition number by using the H\_infty norm
-    (maxeig, )    = DescriptorSystems.ghinfnorm( fullsys )
-    (mineiginv, ) = DescriptorSystems.ghinfnorm( inv( fullsys ) )
+        #crossterm = desc'*clqr.K'*clqr.R
+        crossterm = clqr.R*clqr.K*desc
 
-    # mineiginv is computed using the inverse system, so it actually is the inverse of the minimum eigenvalue of the original system
-    return maxeig * mineiginv
+        (maxeig, )    = DescriptorSystems.ghinfnorm( crossterm )
+        (mineiginv, ) = DescriptorSystems.ghinfnorm( inv( crossterm ) )
+
+        fullcrossterm = crossterm + crossterm'
+
+        (maxeig, )    = DescriptorSystems.ghinfnorm( fullcrossterm )
+        (mineiginv, ) = DescriptorSystems.ghinfnorm( inv( fullcrossterm ) )
+
+
+        # This is the matrix symbol for the Hessian
+        fullsys = L*( desc'*clqr.Qₖ*desc - crossterm - crossterm' + clqr.R )*L'
+
+        # Actually compute the condition number by using the H\_infty norm
+        (maxeig, )    = DescriptorSystems.ghinfnorm( fullsys )
+        (mineiginv, ) = DescriptorSystems.ghinfnorm( inv( fullsys ) )
+
+        # mineiginv is computed using the inverse system, so it actually is the inverse of the minimum eigenvalue of the original system
+        @show maxeig * mineiginv
+
+        # This is the matrix symbol for the Hessian
+        fullsys = L*( desc'*clqr.Qₖ*desc + crossterm + crossterm' + clqr.R )*L'
+
+        # Actually compute the condition number by using the H\_infty norm
+        (maxeig, )    = DescriptorSystems.ghinfnorm( fullsys )
+        (mineiginv, ) = DescriptorSystems.ghinfnorm( inv( fullsys ) )
+
+        # mineiginv is computed using the inverse system, so it actually is the inverse of the minimum eigenvalue of the original system
+        maxeig * mineiginv
+
+        # This is the matrix symbol for the Hessian
+        fullsys = L*( desc'*clqr.Qₖ*desc + clqr.R )*L'
+
+        # Actually compute the condition number by using the H\_infty norm
+        (maxeig, )    = DescriptorSystems.ghinfnorm( fullsys )
+        (mineiginv, ) = DescriptorSystems.ghinfnorm( inv( fullsys ) )
+
+        # mineiginv is computed using the inverse system, so it actually is the inverse of the minimum eigenvalue of the original system
+        return maxeig * mineiginv
+    else
+        # We need the actual transfer function matrix as an evaluatable function
+        pᵧ(z) = z*(sys.C*inv( z*I(nx) - sys.A )*sys.B + sys.D)
+        f(z)  = L*( pᵧ(z)'*clqr.Qₖ*pᵧ(z) - clqr.R*clqr.K*pᵧ(z) - pᵧ(z)'*clqr.K'*clqr.R + clqr.R )*L'
+
+        # Generator for the points around the unit circle to sample at
+        T = ( exp( im*( -π/2 + 2*π*i/samplingPoints ) ) for i=1:samplingPoints )
+
+        # Generator for the matrices to explore for their eigenvalues
+        tfm = ( f(z) for z in T )
+
+        # Compute the eigenvalues of the sampled transfer function matrices
+        mate = eigvals.( tfm )
+        eigs = collect( Iterators.flatten( mate ) )
+        eigs = abs.( eigs )
+
+        sort!( eigs )
+
+        return eigs[end] / eigs[1]
+
+    end
 end
 
 

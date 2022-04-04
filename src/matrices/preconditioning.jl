@@ -111,13 +111,20 @@ preconditioning block can be requested by setting `precondType` to either `:Left
 
 """
 function circulantblockpreconditioner( clqr::ConstrainedTimeInvariantLQR; variant::Symbol = :Strang, form::Symbol = :Symmetric, mat::Symbol = :Full )
-    sys = getsystem( clqr )
+    sys = getsystem( clqr, prestabilized = true )
 
-    # We need the solution to the DARE for the prestabilized system (using the original Q matrix)
-    P, = ared( sys.A, sys.B, clqr.R, clqr.Q)
+    # We need the solution to the DARE (using the original Q matrix) for a prestabilized system
+    if isprestabilized( clqr )
+        P, = ared( sys.A, sys.B, clqr.R, clqr.Q)
+    else
+        P = lyapd( sys.A', clqr.Q )
+    end
+
+    nx = nstates( sys )
+    eye = 1.0*I(nx)
 
     # Form the Hessian block
-    H = sys.B' * P * sys.B + clqr.R
+    H  = sys.B'*P*sys.B - clqr.R*clqr.K*sys.B - sys.B'*clqr.K'*clqr.R + clqr.R
 
     if variant == :Strang
         M = H
