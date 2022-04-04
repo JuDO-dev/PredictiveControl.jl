@@ -138,7 +138,7 @@ function ConstrainedTimeInvariantLQR( sys::AbstractStateSpace, N::Integer, Q::Ab
 
     elseif( K != 0 )
         if( size( K, 1 ) != nᵤ || size( K, 2 ) != nₓ )
-            throw( DimensionMismatch( "K must have $nₓ rows and $nᵤ columns" ) )
+            throw( DimensionMismatch( "K must have $nᵤ rows and $nₓ columns" ) )
         end
         K = to_matrix( T, K )
 
