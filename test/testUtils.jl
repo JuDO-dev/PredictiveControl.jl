@@ -1,5 +1,5 @@
 
-function createSampleLTISystem(; uses::Bool = false, usek::Bool = false, usee::Bool = false, usef::Bool =false )
+function createSampleLTISystem(; N::Int = 10, usedare::Bool = false, uses::Bool = false, usek::Bool = false, usee::Bool = false, usef::Bool =false )
     A = [1.0 1.0;
          0.0 1.0]
     B = [0.0;
@@ -14,6 +14,16 @@ function createSampleLTISystem(; uses::Bool = false, usek::Bool = false, usee::B
     Q = [1.0 1.0;
          1.0 1.0]
     R = [1.0]
+
+    if( usedare )
+        if usek
+            P = :dare
+        else
+            P = :dlyap
+        end
+    else
+        P = :Q
+    end
 
     E = Array{Float64}(undef, 0, 2)
     F = Array{Float64}(undef, 0, 1)
@@ -78,6 +88,6 @@ function createSampleLTISystem(; uses::Bool = false, usek::Bool = false, usee::B
               1.0 ]
     end
 
-    return ConstrainedTimeInvariantLQR( sys, 10, Q, R, :Q, S=S, K=K, E=E, F=F, g=g )
+    return ConstrainedTimeInvariantLQR( sys, N, Q, R, P, S=S, K=K, E=E, F=F, g=g )
 
 end
