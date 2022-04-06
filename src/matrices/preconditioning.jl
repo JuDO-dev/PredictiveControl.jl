@@ -22,20 +22,17 @@ function sdpblockpreconditoner( H::HermitianBlockMatrix )
         ind = ( ( nu*(i-1)+1 ):(nu*i) )
 
         # Create the blocks that go on the diagonal of the constraint matrix
-        E[ind, ind] = @variable( model, [j=1:nu, k=1:nu], base_name="e$i" )
+        E[ind, ind] = @variable( model, [j=1:nu, k=1:nu], base_name="e$i", PSD )
     end
 
     # Initialize the objective
     @variable( model, t )
     @objective( model, Min, t )
 
-    # E should be PSD
-    @constraint( model, E in PSDCone() )
-
     # The coefficient of E is the smallest eigenvalue of the preconditoned matrix
-    @SDconstraint( model, Matrix(H) - E >= 0 )
-    @SDconstraint( model, [E           Matrix(C.L);
-                           Matrix(C.U) t*I(N*nu)] >= 0 )
+    @constraint( model, Matrix(H) - E >= 0, PSDCone() )
+    @constraint( model, [E           Matrix(C.L);
+                         Matrix(C.U) t*I(N*nu)] >= 0, PSDCone() )
 
     JuMP.optimize!( model )
 
@@ -59,13 +56,12 @@ function sdpblockpreconditoner( H::HermitianBlockMatrix )
         @objective( fullModel, Min, t )
 
         # E should be PSD
-        @variable( fullModel, E[1:N*nu, 1:N*nu] )
-        @constraint( fullModel, E in PSDCone() )
+        @variable( fullModel, E[1:N*nu, 1:N*nu], PSD )
 
         # The coefficient of E is the smallest eigenvalue of the preconditoned matrix
-        @SDconstraint( fullModel, Matrix(H) - E >= 0 )
-        @SDconstraint( fullModel, [E           Matrix(C.L);
-                                   Matrix(C.U) t*I(N*nu)] >= 0 )
+        @constraint( fullModel, Matrix(H) - E >= 0, PSDCone() )
+        @constraint( fullModel, [E           Matrix(C.L);
+                                 Matrix(C.U) t*I(N*nu)] >= 0, PSDCone() )
 
         JuMP.optimize!( fullModel )
 
